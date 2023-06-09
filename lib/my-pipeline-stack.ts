@@ -1,7 +1,8 @@
 import { Stack, StackProps} from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { CodePipeline, CodePipelineSource, ShellStep } from 'aws-cdk-lib/pipelines';
+import { CodePipeline, CodePipelineSource, ManualApprovalStep, ShellStep } from 'aws-cdk-lib/pipelines';
 import * as sm from 'aws-cdk-lib/aws-secretsmanager';
+import { MyPipelineAppStage } from './my-pipeline-app-stage';
 
 
 export class MyPipelineStack extends Stack {
@@ -22,5 +23,40 @@ export class MyPipelineStack extends Stack {
         commands: ['npm ci', 'npm run build', 'npx cdk synth']
       })
     });
+
+    // add pre-deployment or post-deployment actions to the stage 
+    const testingStage = pipeline.addStage(new MyPipelineAppStage(this, "test", {
+      //env: { account: "111111111111", region: "eu-west-1" }
+    }))
+    testingStage.addPre(new ManualApprovalStep('approval'))
+
+    //add stages to a Wave to deploy them in parallel,
+      // const wave = pipeline.addWave('wave');
+      // wave.addStage(new MyApplicationStage(this, 'MyAppEU', {
+      //   env: { account: '111111111111', region: 'eu-west-1' }
+      // }));
+      // wave.addStage(new MyApplicationStage(this, 'MyAppUS', {
+      //   env: { account: '111111111111', region: 'us-west-1' }
+      // }));
+
+    // to validate the deployments,
+      // stage was returned by pipeline.addStage
+      // testingStage.addPost(new ShellStep("validate", {
+      //   commands: ['../tests/validate.sh'],
+      // }));
+
+      // given a stack lbStack that exposes a load balancer construct as loadBalancer
+      // this.loadBalancerAddress = new cdk.CfnOutput(lbStack, 'LbAddress', {
+      //   value: `https://${lbStack.loadBalancer.loadBalancerDnsName}/`
+      // });
+
+      // // pass the load balancer address to a shell step
+      // stage.addPost(new ShellStep("lbaddr", {
+      //   envFromCfnOutputs: {lb_addr: lbStack.loadBalancerAddress},
+      //   commands: ['echo $lb_addr']
+      // }));
+
+    // validation tests right in the ShellStep
+
   }
 }
